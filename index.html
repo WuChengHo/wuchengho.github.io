@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CRYPTOLINK — Multi-Site Opener</title>
+
+<!-- Techy mono + sleek sans -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+
+<style>
+  /* =========================== CRYPTOGRAPHIC AESTHETIC =========================== */
+  :root{
+    --bg:#0a0d0f;               /* midnight */
+    --panel:#0f1418;            /* deep panel */
+    --ink:#d9f2e8;              /* pale green */
+    --muted:#8fa39b;            /* desaturated green */
+    --grid:#0f1f1a;             /* grid lines */
+    --accent:#00ffaa;           /* neon mint */
+    --accent2:#67e8f9;          /* cyan */
+    --ring:0 0 0 6px rgba(0,255,170,.08);
+    --radius:16px;
+    --shadow:0 26px 70px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 120% -10%, #062019 0 45%, transparent 45%),
+      radial-gradient(900px 600px at -20% -10%, #061a24 0 45%, transparent 45%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing:.15px;
+    overflow-x:hidden;
+  }
+
+  /* --- Subtle grid background --- */
+  .grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(1000px 700px at 50% 20%, black 40%, transparent 75%);
+    opacity:.6;
+  }
+
+  /* --- Matrix glyph rain (canvas) overlay --- */
+  #rain{ position:fixed; inset:0; z-index:0; opacity:.18; pointer-events:none; }
+
+  /* --- Layout --- */
+  .wrap{ max-width:1100px; margin:64px auto; padding:0 24px; display:grid; gap:22px; position:relative; z-index:1 }
+
+  .header{ text-align:center; display:grid; gap:10px }
+  .title{
+    font-family:"Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+    font-size:clamp(1.6rem,4vw,2.8rem);
+    color:var(--accent);
+    text-shadow:0 0 8px rgba(0,255,170,.5), 0 0 22px rgba(0,255,170,.2);
+    margin:0;
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:.95rem;
+  }
+
+  /* --- Panels --- */
+  .panel{
+    background:
+      linear-gradient(180deg, rgba(0,255,170,.04), rgba(103,232,249,.03) 60%, rgba(0,0,0,.0));
+    border:1px solid #11201a;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+
+  /* --- Decorative cipher ring --- */
+  .panel::before{
+    content:"";
+    position:absolute; top:-70px; right:-70px; width:160px; height:160px; border-radius:50%;
+    background:
+      conic-gradient(from 0deg, #0d2b23 0 25%, #0a2328 0 50%, #0d2b23 0 75%, #0a2328 0 100%);
+    mask:
+      radial-gradient(circle at center, transparent 54px, black 55px),
+      radial-gradient(circle at center, black 78px, transparent 79px);
+    -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+    box-shadow:0 0 0 1px #143c30 inset, 0 0 22px rgba(0,255,170,.2);
+    animation: spin 16s linear infinite;
+    opacity:.6;
+  }
+  @keyframes spin { to { transform: rotate(360deg);} }
+
+  /* --- Form --- */
+  .bar{ padding:18px; display:grid; gap:12px }
+  .search{ display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center }
+  .input{
+    width:100%; padding:16px 18px; background:#0b1215; color:var(--ink);
+    border:1px solid #133026; border-radius:12px; font-size:1.05rem;
+    outline:none; transition:.15s;
+  }
+  .input:focus{ box-shadow:var(--ring), inset 0 0 0 1px var(--accent); border-color:var(--accent) }
+  .btn{
+    appearance:none; border:1px solid var(--accent); background:linear-gradient(180deg,#0f1517,#0a1012);
+    color:var(--accent); padding:14px 18px; border-radius:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:10px; cursor:pointer;
+    transition:transform .12s ease, background .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease;
+    box-shadow:0 12px 34px rgba(0,255,170,.12);
+  }
+  .btn:hover{ transform:translateY(-1px); background:var(--accent); color:#05110d; border-color:transparent }
+  .btn.ghost{ border-style:dashed; color:var(--ink); border-color:#22423a }
+  .actions{ display:flex; flex-wrap:wrap; gap:10px }
+
+  /* --- Sites grid --- */
+  .sites{ padding:16px; display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)) }
+  .site{
+    display:flex; align-items:center; gap:12px; padding:12px 12px; border-radius:12px;
+    background:linear-gradient(180deg,#0b1215,#0a0f12); border:1px solid #182823;
+    transition:.15s transform, .15s border-color, .15s box-shadow;
+  }
+  .site:hover{ transform:translateY(-2px); border-color:var(--accent); box-shadow:0 12px 26px rgba(0,255,170,.12) }
+  .site label{ display:flex; align-items:center; gap:12px; cursor:pointer; width:100% }
+  .site input{ transform:scale(1.2) }
+  .badge{
+    width:42px; height:42px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#04100c;
+    background:
+      radial-gradient(circle at 30% 30%, #8fffe0, #00ffaa 70%);
+    box-shadow: inset 0 0 8px rgba(0,0,0,.2);
+  }
+  .name{ font-weight:700 }
+  .hint{ font-size:.78rem; color:var(--muted) }
+
+  /* --- Links preview --- */
+  .links{ padding:16px; display:grid; gap:10px }
+  .link-chip{
+    display:flex; align-items:center; gap:12px; padding:12px 14px;
+    background:linear-gradient(180deg,#0b1215,#0a0f12); border:1px dashed #1b2f28; border-radius:12px;
+    transition:.15s transform, .15s border-color, .15s background;
+  }
+  .link-chip:hover{ transform:translateY(-2px); border-color:var(--accent); background:#0d1518 }
+  .link-chip a{ color:var(--accent2); text-decoration:none; font-weight:700 }
+  .empty{ color:var(--muted) }
+
+  /* --- Footer --- */
+  .foot{ text-align:center; color:var(--muted); padding:6px 0 28px; font-size:.92rem }
+
+  @media (max-width:680px){
+    .search{ grid-template-columns:1fr }
+    .btn{ width:100%; justify-content:center }
+  }
+</style>
+</head>
+<body>
+  <!-- Background systems -->
+  <canvas id="rain"></canvas>
+  <div class="grid" aria-hidden="true"></div>
+
+  <main class="wrap">
+    <header class="header">
+      <h1 class="title">CRYPTOLINK</h1>
+      <p class="subtitle">Summon store search portals in parallel. No scraping. No storage. Pure URL synthesis.</p>
+    </header>
+
+    <!-- CONTROL BAR -->
+    <section class="panel bar" aria-label="Search & Actions">
+      <div class="search">
+        <input id="q" class="input" placeholder="Enter product keyword — e.g. wireless mouse, AirPods, gaming keyboard" />
+        <button id="openAll" class="btn">Open Portals</button>
+      </div>
+      <div class="actions">
+        <button id="preview" class="btn">Preview Links</button>
+        <button id="copyLinks" class="btn">Copy All</button>
+        <button id="selectAll" class="btn ghost">Toggle Select</button>
+        <span class="subtitle">If your browser blocks pop-ups, allow them for this page.</span>
+      </div>
+    </section>
+
+    <!-- SITES -->
+    <section class="panel" aria-label="Stores">
+      <div class="sites" id="sites"></div>
+      <div style="padding:10px 16px 18px" class="subtitle">Click “Preview Links” to reveal the generated targets.</div>
+    </section>
+
+    <!-- LINKS -->
+    <section class="panel links" id="links" aria-label="Preview">
+      <div class="empty">Nothing here yet. Enter a keyword, then press “Preview Links”.</div>
+    </section>
+
+    <footer class="foot">
+      This tool only builds search URLs and opens them in new tabs. It does not read, store, or compare prices.
+    </footer>
+  </main>
+
+<script>
+/* ====================== STORES ====================== */
+const SITES = [
+  { id:'momo',   name:'momo Shop (TW)',     badge:'MO', url:'https://www.momoshop.com.tw/search/searchShop.jsp?keyword={q}' },
+  { id:'pchome', name:'PChome 24h (TW)',    badge:'PC', url:'https://www.pchome.com.tw/search/?q={q}' },
+  { id:'shopee', name:'Shopee (TW)',        badge:'SP', url:'https://shopee.tw/search?keyword={q}' },
+  { id:'yahoo',  name:'Yahoo Shopping (TW)',badge:'YA', url:'https://tw.buy.yahoo.com/search/product?p={q}' },
+  { id:'rakuten',name:'Rakuten (TW)',       badge:'RA', url:'https://www.rakuten.com.tw/search/{q}/' },
+  { id:'amazon', name:'Amazon (US)',        badge:'AM', url:'https://www.amazon.com/s?k={q}' },
+  { id:'ebay',   name:'eBay',               badge:'EB', url:'https://www.ebay.com/sch/i.html?_nkw={q}' },
+  { id:'gshop',  name:'Google Shopping',    badge:'GS', url:'https://www.google.com/search?tbm=shop&q={q}' }
+];
+
+const $sites = document.getElementById('sites');
+const $links = document.getElementById('links');
+const $q = document.getElementById('q');
+
+function buildUrl(tpl, q){ return tpl.replace('{q}', encodeURIComponent(q.trim())); }
+
+function siteCard(site){
+  const wrap = document.createElement('div');
+  wrap.className = 'site';
+  const label = document.createElement('label');
+
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = ['momo','pchome','shopee','yahoo'].includes(site.id); // common defaults
+
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.textContent = site.badge;
+
+  const info = document.createElement('div');
+  const name = document.createElement('div'); name.className='name'; name.textContent = site.name;
+  const hint = document.createElement('div'); hint.className='hint'; hint.textContent = site.url.replace('{q}','{keyword}');
+  info.append(name, hint);
+
+  label.append(cb, badge, info);
+  wrap.append(label);
+  return wrap;
+}
+
+function renderSites(){
+  $sites.innerHTML = '';
+  SITES.forEach(s => $sites.appendChild(siteCard(s)));
+}
+
+function selectedDefs(){
+  const boxes = $sites.querySelectorAll('input[type="checkbox"]');
+  const ids = [...boxes].filter(b => b.checked).map(b => {
+    const item = b.closest('.site');
+    const idx = [...$sites.children].indexOf(item);
+    return SITES[idx].id;
+  });
+  return SITES.filter(s => ids.includes(s.id));
+}
+
+function renderLinks(){
+  const q = $q.value.trim();
+  $links.innerHTML = '';
+  if(!q){ $links.innerHTML = '<div class="empty">Enter a keyword, then hit “Preview Links”.</div>'; return; }
+  const defs = selectedDefs();
+  if(defs.length===0){ $links.innerHTML = '<div class="empty">Select at least one store.</div>'; return; }
+  defs.forEach(d=>{
+    const row = document.createElement('div'); row.className='link-chip';
+    const badge = document.createElement('div'); badge.className='badge'; badge.textContent=d.badge;
+    const a = document.createElement('a'); a.href=buildUrl(d.url, q); a.target='_blank'; a.rel='noopener';
+    a.textContent = `Open ${d.name}`;
+    row.append(badge, a);
+    $links.appendChild(row);
+  });
+}
+
+/* ---- Events ---- */
+document.getElementById('preview').addEventListener('click', renderLinks);
+
+/* Synchronous multi-tab open (must be inside user-gesture) */
+document.getElementById('openAll').addEventListener('click', ()=>{
+  const q = $q.value.trim();
+  if(!q){ alert('Type a product name first.'); $q.focus(); return; }
+  const defs = selectedDefs();
+  if(defs.length===0){ alert('Select at least one store.'); return; }
+  defs.forEach(d => window.open(buildUrl(d.url, q), '_blank', 'noopener'));
+});
+
+/* Toggle select all/none */
+document.getElementById('selectAll').addEventListener('click', ()=>{
+  const boxes = $sites.querySelectorAll('input[type="checkbox"]');
+  const list = [...boxes];
+  const all = list.every(b => b.checked);
+  list.forEach(b => b.checked = !all);
+  renderLinks();
+});
+
+/* Copy all links */
+document.getElementById('copyLinks').addEventListener('click', async ()=>{
+  const q = $q.value.trim();
+  if(!q){ alert('Type a product name first.'); return; }
+  const urls = selectedDefs().map(d => buildUrl(d.url, q));
+  if(urls.length===0){ alert('Select at least one store.'); return; }
+  try{
+    await navigator.clipboard.writeText(urls.join('\n'));
+    alert('All links copied to clipboard.');
+  }catch{
+    const ta=document.createElement('textarea'); ta.value=urls.join('\n'); document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    alert('All links copied to clipboard.');
+  }
+});
+
+/* --- Matrix glyph rain (lightweight) --- */
+(function matrixRain(){
+  const c = document.getElementById('rain');
+  const ctx = c.getContext('2d');
+  let w,h,cols,ypos;
+  const glyphs = '0123456789ABCDEF◇◆◈⊕⊗⌁⌘⌖⟡⟐▣□■⟂∴∵';
+  function resize(){
+    w = c.width = window.innerWidth;
+    h = c.height = window.innerHeight;
+    cols = Math.floor(w / 16);
+    ypos = Array(cols).fill(0);
+  }
+  function step(){
+    ctx.fillStyle='rgba(5,14,12,0.08)';
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#00ffaa';
+    ctx.font='14px "IBM Plex Mono", monospace';
+    for(let i=0;i<cols;i++){
+      const text = glyphs[Math.floor(Math.random()*glyphs.length)];
+      const x = i*16, y = ypos[i]*16;
+      ctx.fillText(text, x, y);
+      if(y > h + Math.random()*200) ypos[i] = 0; else ypos[i]++;
+    }
+    requestAnimationFrame(step);
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize(); step();
+})();
+
+renderSites(); $q.focus();
+</script>
+</body>
+</html>
